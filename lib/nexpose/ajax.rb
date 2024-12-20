@@ -155,14 +155,12 @@ module Nexpose
     def request(nsc, request, timeout = nil)
       http = https(nsc, timeout)
       headers(nsc, request)
-      $stderr.puts "Sending the following request headers to Nexpose: #{request.headers}" if request.respond_to?(:headers)
-      $stderr.puts "Sending the following request fields to Nexpose: #{request.fields.inspect}"
-      $stderr.puts "Sending the following request body to Nexpose: #{request.body.inspect}"
+      $stderr.puts "Sending the following request fields to Nexpose: #{request.to_hash}"
       # Return response body if request is successful. Brittle.
       response = http.request(request)
       case response
       when Net::HTTPOK, Net::HTTPCreated, Net::HTTPNoContent
-        $stderr.puts "Received the following OK body from Nexpose request: #{response.body.inspect}"
+        $stderr.puts "Received the following OK body from Nexpose request: #{response.to_hash}"
         response.body
       when Net::HTTPForbidden
         raise Nexpose::PermissionError.new(response)
