@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+require 'logger'
+
 module Nexpose
   # Accessor to the Nexpose AJAX API.
   # These core methods should allow direct access to underlying controllers
@@ -11,6 +13,14 @@ module Nexpose
 
     API_PATTERN = %r{/api/(?<version>[\d\.]+)}
     private_constant :API_PATTERN
+
+    def logger
+      @logger ||= Logger.new('/tmp/my-nexpose-logger-output.log')
+    end
+
+    def my_log(msg)
+      logger.debug(msg)
+    end
 
     # Content type strings acceptect by Nexpose.
     #
@@ -63,6 +73,8 @@ module Nexpose
       post = Net::HTTP::Post.new(uri)
       post.set_content_type(content_type)
       post.body = payload.to_s if payload
+      my_log("Received the following content type in post: '#{content_type}'")
+      my_log("Received the following payload in post: '#{payload.to_s}'")
       request(nsc, post, timeout)
     end
 
@@ -155,14 +167,14 @@ module Nexpose
     def request(nsc, request, timeout = nil)
       http = https(nsc, timeout)
       headers(nsc, request)
-      $stderr.puts "Sending the following request fields to Nexpose: #{request.to_hash}"
-      $stderr.puts "Sending the following request body to Nexpose: #{request.body}"
+      my_log("Sending the following request fields to Nexpose: #{request.to_hash}")
+      my_log("Sending the following request body to Nexpose: #{request.body}")
       # Return response body if request is successful. Brittle.
       response = http.request(request)
       case response
       when Net::HTTPOK, Net::HTTPCreated, Net::HTTPNoContent
-        $stderr.puts "Received the following OK body from Nexpose request: #{response.to_hash}"
-        $stderr.puts "Received the following OK body from Nexpose request body: #{response.body}"
+        my_log("Received the following OK body from Nexpose request: #{response.to_hash}")
+        my_log("Received the following OK body from Nexpose request body: #{response.body}")
         response.body
       when Net::HTTPForbidden
         raise Nexpose::PermissionError.new(response)
